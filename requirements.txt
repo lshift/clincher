@@ -4,12 +4,25 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
+atomicwrites==1.2.1       # via pytest
+attrs==18.2.0             # via pytest
 dateparser==0.7.0
+funcsigs==1.0.2           # via mock, pytest
 gitdb2==2.0.3             # via gitpython
 gitpython==2.1.8
+mock==2.0.0               # via pytest-mock
+more-itertools==4.3.0     # via pytest
+pathlib2==2.3.2           # via pytest
+pbr==4.3.0                # via mock
+pluggy==0.7.1             # via pytest
+py==1.6.0                 # via pytest
+pytest-mock==1.10.0
+pytest==3.8.2
 python-dateutil==2.7.3    # via dateparser
 pytz==2018.4              # via dateparser, tzlocal
 regex==2018.2.21          # via dateparser
-six==1.11.0               # via python-dateutil
+scandir==1.9.0            # via pathlib2
+six==1.11.0               # via mock, more-itertools, pathlib2, pytest, python-dateutil
 smmap2==2.0.3             # via gitdb2
+testfixtures==6.3.0
 tzlocal==1.5.1            # via dateparser
