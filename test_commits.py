@@ -44,7 +44,8 @@ def test_checker(mocker):
         popen.set_command('git version', stdout=b'git version 2.14.3', stderr=b'')
         popen.set_command('git rev-list foo --', stdout=commit_sha, stderr=b'')
         popen.set_command('git cat-file --batch', stdout=dummy_rev, stderr=b'')
-        popen.set_command("git show %s" % commit_sha.decode("utf-8"), stdout=dummy_commit, stderr=b'')
+        sha_str = commit_sha.decode("utf-8")
+        popen.set_command("git show %s" % sha_str, stdout=dummy_commit, stderr=b'')
 
         from check_commits import CommitChecker
         c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
@@ -52,6 +53,6 @@ def test_checker(mocker):
             with pytest.raises(SystemExit):
                 c.check()
             output.compare('\n'.join([
-                "4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1 Test commit False",
-                "Missing signature for 4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1 by Foo",
+                "%s Test commit False" % sha_str,
+                "Missing signature for %s by Foo" % sha_str,
             ]))
