@@ -1,0 +1,1 @@
+Files should be named "[something].gpg", but what the "something" is does not matter (from a code perspective), but they should be named after the person who's key it is just to reduce confusion.

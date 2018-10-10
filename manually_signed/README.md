@@ -1,0 +1,1 @@
+The files in this directory are for git commits that were not signed originally.
