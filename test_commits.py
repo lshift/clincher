@@ -4,6 +4,7 @@ import pytest
 from testfixtures import OutputCapture
 from unittest.mock import patch, DEFAULT
 import sys
+from contextlib import contextmanager
 
 class _TestArgs:
     key_path = "keys"
@@ -78,45 +79,37 @@ class RollbackImporter:
                 if modname in sys.modules:
                     del(sys.modules[modname])
 
-def test_checker():
+@contextmanager
+def checker():
     rollback = RollbackImporter()
     with TempDirectory() as d:
         popen = MockPopen()
         with patch.multiple('subprocess', run=DEFAULT, Popen=popen) as values:
             popen.set_command('git version', stdout=b'git version 2.14.3', stderr=b'')
             popen.set_command('git rev-list foo --', stdout=commit_sha, stderr=b'')
-            popen.set_command('git cat-file --batch', stdout=dummy_rev, stderr=b'')
             sha_str = commit_sha.decode("utf-8")
             popen.set_command("git show %s" % sha_str, stdout=dummy_commit, stderr=b'')
-
             from check_commits import CommitChecker
             c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
             with OutputCapture() as output:
-                with pytest.raises(SystemExit):
-                    c.check()
-                output.compare('\n'.join([
-                    "%s Test commit False" % sha_str,
-                    "Missing signature for %s by Foo" % sha_str,
-                ]))
+                yield (output, popen, c, sha_str)
     rollback.uninstall()
+
+def test_checker():
+    with checker() as (output, popen, c, sha_str):
+        popen.set_command('git cat-file --batch', stdout=dummy_rev, stderr=b'')
+        with pytest.raises(SystemExit):
+            c.check()
+        output.compare('\n'.join([
+            "%s Test commit False" % sha_str,
+            "Missing signature for %s by Foo" % sha_str,
+        ]))
 
 def test_signed_checker():
-    rollback = RollbackImporter()
-    with TempDirectory() as d:
-        popen = MockPopen()
-        with patch.multiple('subprocess', run=DEFAULT, Popen=popen) as values:
-            popen.set_command('git version', stdout=b'git version 2.14.3', stderr=b'')
-            popen.set_command('git rev-list foo --', stdout=commit_sha, stderr=b'')
-            popen.set_command('git cat-file --batch', stdout=signed_dummy_rev, stderr=b'')
-            sha_str = commit_sha.decode("utf-8")
-            popen.set_command("git show %s" % sha_str, stdout=dummy_commit, stderr=b'')
-            popen.set_command("git verify-commit %s" % sha_str, stdout=dummy_verify, stderr=b'')
-
-            from check_commits import CommitChecker
-            c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
-            with OutputCapture() as output:
-                c.check()
-                output.compare('\n'.join([
-                    "All commits matching foo are signed"
-                ]))
-    rollback.uninstall()
+    with checker() as (output, popen, c, sha_str):
+        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev, stderr=b'')
+        popen.set_command("git verify-commit %s" % sha_str, stdout=dummy_verify, stderr=b'')
+        c.check()
+        output.compare('\n'.join([
+            "All commits matching foo are signed"
+        ]))
