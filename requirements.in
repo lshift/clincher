@@ -1,2 +1,6 @@
 GitPython
 dateparser
+
+pytest
+pytest-mock
+testfixtures
