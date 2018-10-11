@@ -1,5 +1,6 @@
 Git signature checking tool
 ===========================
+[![Build Status](https://travis-ci.org/lshift/clincher.svg?branch=master)](https://travis-ci.org/lshift/clincher)
 
 `check_commits.py` is a tool for checking that all the commits in a git repo are signed, or if they're not that someone has signed something afterwards to backfill that.
 
