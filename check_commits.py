@@ -1,4 +1,5 @@
-import git
+from dulwich.repo import Repo
+import dulwich.porcelain as porcelain
 import platform
 import tempfile
 import io
@@ -101,22 +102,23 @@ class CommitChecker:
         self.keys = [os.path.abspath(os.path.join(self.keydir, k)) for k in os.listdir(self.keydir) if k.endswith(".gpg")]
         check_or_throw(["gpg", "--import"] + self.keys)
 
-        self.repo = git.Repo(args.git_path)
+        self.git_path = args.git_path
+        self.repo = Repo(args.git_path)
         self.manual = os.path.abspath(args.manual_signing_path)
 
-        with self.repo.config_writer(config_level='global') as config:
-            if not config.has_section("user"):
-                config.add_section("user")
-            if not config.has_option(section="user", option="email"):
-                config.set("user", "email", args.email)
-            if not config.has_option(section="user", option="name"):
-                config.set("user", "name", args.name)
-            config.write()
+        config = self.repo.get_config()
+        # if not config.has_section("user"):
+        #     config.add_section("user")
+        #if not config.has_option(section="user", option="email"):
+        config.set("user", "email", args.email)
+        #if not config.has_option(section="user", option="name"):
+        config.set("user", "name", args.name)
+        config.write_to_path(os.path.join(args.git_path, ".git/config"))
 
         self.errors = set()
     
     def check(self):
-        for c in self.repo.iter_commits(rev=self.rev_spec):
+        for c in porcelain.rev_list(self.git_path, commits=self.rev_spec):
             if c.gpgsig == None:
                 if len(c.parents) == 2:
                     self.check_merge(c)
