@@ -5,6 +5,9 @@ from testfixtures import OutputCapture
 from unittest.mock import patch, DEFAULT
 import sys
 from contextlib import contextmanager
+import subprocess
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 class _TestArgs:
     key_path = "keys"
@@ -63,6 +66,15 @@ dummy_verify = b"""gpg: Signature made Wed 10 Oct 16:13:01 2018 BST
 gpg:                using RSA key 74B57F3EE0C015BB63934F44267B1CAF090BFA67
 gpg: Good signature from "Foo <foo@bar.com>" [ultimate]"""
 
+dummy_verify_expired = b"""gpg: Signature made Fri 25 May 15:29:58 2018 BST
+gpg:                using RSA key 25C54F2464FFFF00A2B0031EB1EA0F133F6DAC7F
+gpg: Good signature from "Foo <foo@bar.com>" [expired]
+gpg: Note: This key has expired!"""
+
+expired_key = """pub   rsa4096 2018-05-01 [SCEA] [expired: 2018-07-30]
+      5092AC6B5AD6AEA069424FF0C50B04D24E7758D7
+uid           [ expired] Foo <foo@bar.com>"""
+
 class RollbackImporter:
     def __init__(self):
         sys.meta_path.insert(0, self)
@@ -79,25 +91,34 @@ class RollbackImporter:
                 if modname in sys.modules:
                     del(sys.modules[modname])
 
+def make_run(*args, **kwargs):
+    if args == (['gpg', '--import'],):
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=b'')
+    elif args == (['gpg', '--list-keys', '25C54F2464FFFF00A2B0031EB1EA0F133F6DAC7F'],):
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)
+    else:
+        raise Exception(args)
+
 @contextmanager
 def checker():
     rollback = RollbackImporter()
     with TempDirectory() as d:
         popen = MockPopen()
-        with patch.multiple('subprocess', run=DEFAULT, Popen=popen) as values:
-            popen.set_command('git version', stdout=b'git version 2.14.3', stderr=b'')
-            popen.set_command('git rev-list foo --', stdout=commit_sha, stderr=b'')
-            sha_str = commit_sha.decode("utf-8")
-            popen.set_command("git show %s" % sha_str, stdout=dummy_commit, stderr=b'')
-            from check_commits import CommitChecker
-            c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
-            with OutputCapture() as output:
-                yield (output, popen, c, sha_str)
+        with patch('subprocess.run', new=make_run):
+            with patch.multiple('subprocess', Popen=popen) as values:
+                popen.set_command('git version', stdout=b'git version 2.14.3')
+                popen.set_command('git rev-list foo --', stdout=commit_sha)
+                sha_str = commit_sha.decode("utf-8")
+                popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
+                from check_commits import CommitChecker
+                c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
+                with OutputCapture() as output:
+                    yield (output, popen, c, sha_str)
     rollback.uninstall()
 
 def test_checker():
     with checker() as (output, popen, c, sha_str):
-        popen.set_command('git cat-file --batch', stdout=dummy_rev, stderr=b'')
+        popen.set_command('git cat-file --batch', stdout=dummy_rev)
         with pytest.raises(SystemExit):
             c.check()
         output.compare('\n'.join([
@@ -107,8 +128,17 @@ def test_checker():
 
 def test_signed_checker():
     with checker() as (output, popen, c, sha_str):
-        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev, stderr=b'')
-        popen.set_command("git verify-commit %s" % sha_str, stdout=dummy_verify, stderr=b'')
+        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        popen.set_command("git verify-commit %s" % sha_str, stderr=dummy_verify)
+        c.check()
+        output.compare('\n'.join([
+            "All commits matching foo are signed"
+        ]))
+
+def test_expired_signed_checker():
+    with checker() as (output, popen, c, sha_str):
+        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        popen.set_command("git verify-commit %s" % sha_str, stderr=dummy_verify_expired, returncode=2)
         c.check()
         output.compare('\n'.join([
             "All commits matching foo are signed"
