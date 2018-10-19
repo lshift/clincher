@@ -3,6 +3,7 @@ dateparser
 
 pytest
 pytest-mock
+pytest-cov
 
 -e git+https://github.com/palfrey/testfixtures.git@parallel-popen#egg=testfixtures
 

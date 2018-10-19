@@ -8,4 +8,4 @@ COPY requirements.txt ./
 RUN pip install --user --no-cache-dir -r requirements.txt
 COPY . ./
 ENV GIT_PYTHON_TRACE=1
-RUN python -m pytest -sv test_commits.py
+RUN python -m pytest -sv test_commits.py --cov=clincher --cov-report=term-missing
