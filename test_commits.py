@@ -113,33 +113,43 @@ def checker():
                 from clincher import CommitChecker
                 c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
                 with OutputCapture() as output:
-                    yield (output, popen, c, sha_str)
+                    yield {"output":output, "popen":popen, "checker":c, "sha":sha_str, "directory": d}
     rollback.uninstall()
 
 def test_checker():
-    with checker() as (output, popen, c, sha_str):
-        popen.set_command('git cat-file --batch', stdout=dummy_rev)
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
         with pytest.raises(SystemExit):
-            c.check()
-        output.compare('\n'.join([
-            "%s Test commit False" % sha_str,
-            "Missing signature for %s by Foo" % sha_str,
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "%s Test commit False" % v["sha"],
+            "Missing signature for %s by Foo" % v["sha"],
+        ]))
+
+def test_checker():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "%s Test commit False" % v["sha"],
+            "Missing signature for %s by Foo" % v["sha"],
         ]))
 
 def test_signed_checker():
-    with checker() as (output, popen, c, sha_str):
-        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev)
-        popen.set_command("git verify-commit %s" % sha_str, stderr=dummy_verify)
-        c.check()
-        output.compare('\n'.join([
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
+        v["checker"].check()
+        v["output"].compare('\n'.join([
             "All commits matching foo are signed"
         ]))
 
 def test_expired_signed_checker():
-    with checker() as (output, popen, c, sha_str):
-        popen.set_command('git cat-file --batch', stdout=signed_dummy_rev)
-        popen.set_command("git verify-commit %s" % sha_str, stderr=dummy_verify_expired, returncode=2)
-        c.check()
-        output.compare('\n'.join([
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify_expired, returncode=2)
+        v["checker"].check()
+        v["output"].compare('\n'.join([
             "All commits matching foo are signed"
         ]))
