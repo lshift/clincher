@@ -95,8 +95,14 @@ class CommitChecker:
             else:
                 raise Exception((ce.stdout, ce.stderr))
     
-    def __init__(self, rev_spec, args):
-        self.rev_spec = rev_spec
+    def __init__(self, args):
+        if args.rev_spec != None:
+            self.rev_spec = args.rev_spec
+        elif args.check_everything:
+            self.rev_spec = None
+        else:
+            self.rev_spec = "HEAD...master"
+
         self.keydir = os.path.abspath(args.key_path)
         self.keys = [os.path.abspath(os.path.join(self.keydir, k)) for k in os.listdir(self.keydir) if k.endswith(".gpg")]
         check_or_throw(["gpg", "--import"] + self.keys)
@@ -146,12 +152,5 @@ if __name__ == "__main__":
     parser.add_argument("--name", default="Automated signer")
     args = parser.parse_args()
 
-    if args.rev_spec != None:
-        rev_spec = args.rev_spec
-    elif args.check_everything:
-        rev_spec = None
-    else:
-        rev_spec = "HEAD...master"
-
-    checker = CommitChecker(rev_spec, args)
+    checker = CommitChecker(args)
     checker.check()

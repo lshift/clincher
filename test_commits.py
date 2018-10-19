@@ -15,6 +15,7 @@ class _TestArgs:
     git_path = "."
     name = "Foo"
     email = "foo@bar.com"
+    rev_spec = "foo"
 
     def __init__(self, manual_signing_path=None):
         if manual_signing_path:
@@ -119,7 +120,7 @@ def checker():
                 sha_str = commit_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
                 from clincher import CommitChecker
-                c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
+                c = CommitChecker(_TestArgs(manual_signing_path=d.path))
                 with OutputCapture() as output:
                     yield {"output":output, "popen":popen, "checker":c, "sha":sha_str, "directory": d}
     rollback.uninstall()
