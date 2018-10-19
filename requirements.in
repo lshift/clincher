@@ -5,3 +5,5 @@ pytest
 pytest-mock
 
 -e git+https://github.com/palfrey/testfixtures.git@parallel-popen#egg=testfixtures
+
+pip-tools
