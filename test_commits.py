@@ -110,7 +110,7 @@ def checker():
                 popen.set_command('git rev-list foo --', stdout=commit_sha)
                 sha_str = commit_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
-                from check_commits import CommitChecker
+                from clincher import CommitChecker
                 c = CommitChecker("foo", _TestArgs(manual_signing_path=d.path))
                 with OutputCapture() as output:
                     yield (output, popen, c, sha_str)
