@@ -51,7 +51,7 @@ class CommitChecker:
 
     def check_unsigned(self, c):
         manual_path = os.path.join(self.manual, "%s - %s" % (c.hexsha, c.author.name))
-        gpg_path = manual_path + ".signature"
+        gpg_path = manual_path + ".asc"
         if not os.path.exists(manual_path):
             open(manual_path, "w").write(self.get_commit_details(c))
             self.new_error(c, "Missing signature for %s by %s" % (c.hexsha, c.author.name))

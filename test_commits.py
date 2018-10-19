@@ -75,6 +75,12 @@ expired_key = """pub   rsa4096 2018-05-01 [SCEA] [expired: 2018-07-30]
       5092AC6B5AD6AEA069424FF0C50B04D24E7758D7
 uid           [ expired] Foo <foo@bar.com>"""
 
+good_signature = """gpg: Signature made Fri 19 Oct 21:20:15 2018 BST
+gpg:                using RSA key 5BBC2B94F704B8DE246E78C471951B6C037BC7A0
+gpg: Good signature from "Foo <foo@bar.com>" [ultimate]"""
+
+not_detached_signature = "gpg: not a detached signature"
+
 class RollbackImporter:
     def __init__(self):
         sys.meta_path.insert(0, self)
@@ -96,6 +102,8 @@ def make_run(*args, **kwargs):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=b'')
     elif args == (['gpg', '--list-keys', '25C54F2464FFFF00A2B0031EB1EA0F133F6DAC7F'],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)
+    elif args[0][:2] == ["gpg", "--verify"]:
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=good_signature)
     else:
         raise Exception(args)
 
@@ -134,7 +142,17 @@ def test_checker_with_file():
             v["checker"].check()
         v["output"].compare('\n'.join([
             "%s Test commit False" % v["sha"],
-            "Can't find signature file '%s/%s - Foo.signature' for %s" % (v["directory"].path, v["sha"], v["sha"])
+            "Can't find signature file '%s/%s - Foo.asc' for %s" % (v["directory"].path, v["sha"], v["sha"])
+        ]))
+
+def test_checker_with_signed_file():
+    with checker() as v:
+        v["directory"].write("%s - Foo" % v["sha"], b"Blah")
+        v["directory"].write("%s - Foo.asc" % v["sha"], b"Blah signed")
+        v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
+        v["checker"].check()
+        v["output"].compare('\n'.join([
+            "All commits matching foo are signed"
         ]))
 
 def test_signed_checker():
