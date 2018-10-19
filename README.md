@@ -10,6 +10,9 @@ By default, `python clincher.py` will check only the commits between current HEA
 * `--rev-spec` allows for checking everything in a git rev spec (as per https://git-scm.com/docs/gitrevisions#_specifying_ranges). This is needed for Jenkins support as it doesn't have a "master" branch, but "remotes/upstream/master" does exist
 * `--git-path` allows for specifying the root directory
 
-If a commit isn't signed, a file will be generated in the "manually_signed" folder corresponding to that commit.
+If a commit isn't signed, a file will be generated in the "manually_signed" folder corresponding to that commit
+
+To sign the commit, use the following
+`gpg --sign --armor --detach-sign manually_signed/<commit file>`
 
 "keys" contains a list of the GPG keys for all trusted users, which will be automatically imported by the tool.
