@@ -126,14 +126,15 @@ def test_checker():
             "Missing signature for %s by Foo" % v["sha"],
         ]))
 
-def test_checker():
+def test_checker_with_file():
     with checker() as v:
+        v["directory"].write("%s - Foo" % v["sha"], b"Blah")
         v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
         with pytest.raises(SystemExit):
             v["checker"].check()
         v["output"].compare('\n'.join([
             "%s Test commit False" % v["sha"],
-            "Missing signature for %s by Foo" % v["sha"],
+            "Can't find signature file '%s/%s - Foo.signature' for %s" % (v["directory"].path, v["sha"], v["sha"])
         ]))
 
 def test_signed_checker():
