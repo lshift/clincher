@@ -9,6 +9,8 @@ import sys
 import argparse
 import difflib
 import dateparser
+import shutil
+import tempfile
 
 def check_or_throw(cmd):
     try:
@@ -109,7 +111,10 @@ class CommitChecker:
         if len(self.keys) > 0:
             check_or_throw(["gpg", "--import"] + self.keys)
 
-        self.repo = git.Repo(args.git_path)
+        self.temp_git_path = tempfile.TemporaryDirectory()
+        local_git_path = self.temp_git_path.name + "/.git"
+        shutil.copytree(args.git_path + "/.git", local_git_path)
+        self.repo = git.Repo(local_git_path)
         self.manual = os.path.abspath(args.manual_signing_path)
 
         with self.repo.config_writer(config_level='global') as config:
@@ -142,6 +147,9 @@ class CommitChecker:
                 print("All commits in repo are signed")
             else:
                 raise NotImplementedError("Unreachable rev spec!")
+
+    def __del__(self):
+        self.temp_git_path.cleanup()
 
 if __name__ == "__main__": # skip because hard to check the CLI bit
     parser = argparse.ArgumentParser()
