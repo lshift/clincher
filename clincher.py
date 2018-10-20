@@ -72,7 +72,7 @@ class CommitChecker:
             self.repo.git.verify_commit(c.hexsha)
         except git.exc.GitCommandError as ce:
             if ce.stderr.find("Can't check signature: No public key") != -1 or ce.stderr.find("Can't check signature: public key not found") != -1: # Seen first from OSX and the latter from Linux
-                key_id = get_key(ce.stderr)
+                key_id = self.get_key(ce.stderr)
                 self.new_error(c, "No key available for %s <%s>. We were looking for key with id %s" % (c.author.name, c.author.email, key_id))
             elif ce.stderr.find("Note: This key has expired") != -1:
                 key_id = self.get_key(ce.stderr)

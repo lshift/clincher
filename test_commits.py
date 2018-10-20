@@ -85,22 +85,28 @@ index 0000000..a47c0a9
 @@ -0,0 +1,1 @@
 +FROM python:3.6-slim""" % commit_sha
 
+key_signature = b"5BBC2B94F704B8DE246E78C471951B6C037BC7A0"
+
 dummy_verify = b"""gpg: Signature made Wed 10 Oct 16:13:01 2018 BST
-gpg:                using RSA key 74B57F3EE0C015BB63934F44267B1CAF090BFA67
-gpg: Good signature from "Foo <foo@bar.com>" [ultimate]"""
+gpg:                using RSA key %s
+gpg: Good signature from "Foo <foo@bar.com>" [ultimate]""" % key_signature
 
 dummy_verify_expired = b"""gpg: Signature made Fri 25 May 15:29:58 2018 BST
-gpg:                using RSA key 25C54F2464FFFF00A2B0031EB1EA0F133F6DAC7F
+gpg:                using RSA key %s
 gpg: Good signature from "Foo <foo@bar.com>" [expired]
-gpg: Note: This key has expired!"""
+gpg: Note: This key has expired!""" % key_signature
 
 expired_key = """pub   rsa4096 2018-05-01 [SCEA] [expired: 2018-07-30]
-      5092AC6B5AD6AEA069424FF0C50B04D24E7758D7
-uid           [ expired] Foo <foo@bar.com>"""
+      %s
+uid           [ expired] Foo <foo@bar.com>""" % key_signature
 
 good_signature = """gpg: Signature made Fri 19 Oct 21:20:15 2018 BST
-gpg:                using RSA key 5BBC2B94F704B8DE246E78C471951B6C037BC7A0
-gpg: Good signature from "Foo <foo@bar.com>" [ultimate]"""
+gpg:                using RSA key %s
+gpg: Good signature from "Foo <foo@bar.com>" [ultimate]""" % key_signature
+
+no_key = b"""gpg: Signature made Fri May  4 14:27:18 2018 UTC
+gpg:                using RSA key %s
+gpg: Can't check signature: No public key""" % key_signature
 
 not_detached_signature = "gpg: not a detached signature"
 
@@ -123,7 +129,7 @@ class RollbackImporter:
 def make_run(*args, **kwargs):
     if args == (['gpg', '--import'],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=b'')
-    elif args == (['gpg', '--list-keys', '25C54F2464FFFF00A2B0031EB1EA0F133F6DAC7F'],):
+    elif args == (['gpg', '--list-keys', key_signature.decode('utf-8')],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)
     elif args[0][:2] == ["gpg", "--verify"]:
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=good_signature)
@@ -196,6 +202,18 @@ def test_expired_signed_checker():
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
         ]))
+
+def test_no_key_signed_checker():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=no_key, returncode=2)
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "%s  iQEzBAABCAAdFiEEdLV/PuDAFbtjk09EJnscrwkL+mcFAlu+Fv0ACgkQJnscrwkL True" % v["sha"],
+            "No key available for Foo <foo@bar.com>. We were looking for key with id %s" % key_signature.decode('utf-8')
+        ]))
+
 
 def test_checker_with_everything():
     with checker(check_everything=True) as v:
