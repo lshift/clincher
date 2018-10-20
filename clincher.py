@@ -41,14 +41,18 @@ class CommitChecker:
         if commit.find("diff") != -1:
             first, second = [p.hexsha for p in c.parents]
             self.repo.git.reset("--hard", first)
-            self.repo.git(c="commit.gpgsign=false").merge(second, "--no-edit")
+            try:
+                self.repo.git(c="commit.gpgsign=false").merge(second, "--no-edit")
+            except git.GitCommandError as e:
+                if e.stdout.find("Automatic merge failed") != -1:
+                    self.new_error(c, "Unsigned conflicting merge found, which we can't check")
+                else:
+                    self.new_error(c, "Error while trying to check merge: %s" % e.stdout)
+                return
             local_commit = self.repo.git.show("HEAD", "--format=")
             if local_commit != commit:
                 diff = difflib.unified_diff(commit, local_commit)
-                print("".join(list(diff)))
-                print("Commit: '%s'" % commit)
-                print("Local commit: '%s'" % local_commit)
-                self.new_error(c, "Changes during the merge %s" % c.hexsha)
+                self.new_error(c, "Conflicted unsigned merge")
                 raise Exception
 
     def check_unsigned(self, c):
