@@ -106,7 +106,8 @@ class CommitChecker:
 
         self.keydir = os.path.abspath(args.key_path)
         self.keys = [os.path.abspath(os.path.join(self.keydir, k)) for k in os.listdir(self.keydir) if k.endswith(".gpg")]
-        check_or_throw(["gpg", "--import"] + self.keys)
+        if len(self.keys) > 0:
+            check_or_throw(["gpg", "--import"] + self.keys)
 
         self.repo = git.Repo(args.git_path)
         self.manual = os.path.abspath(args.manual_signing_path)
@@ -146,9 +147,9 @@ if __name__ == "__main__": # skip because hard to check the CLI bit
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-everything", help="Check everything back to the beginning (default: last branch with master)", action='store_true', default=False)
     parser.add_argument("--rev-spec", help="Add specific revision spec to check. This overrides any use of --check-everything", default=None)
-    parser.add_argument("--git-path", default=".")
-    parser.add_argument("--key-path", default="keys")
-    parser.add_argument("--manual-signing-path", default="manually_signed")
+    parser.add_argument("--git-path", default=".", help="Path to git repo (default: this directory)")
+    parser.add_argument("--key-path", default="keys", help="Path to GPG keys (default: keys)")
+    parser.add_argument("--manual-signing-path", default="manually_signed", help="Path to manually signed files (default: manually_signed)")
     parser.add_argument("--email", default="automated@example.com")
     parser.add_argument("--name", default="Automated signer")
     args = parser.parse_args()
