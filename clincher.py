@@ -135,11 +135,11 @@ class CommitChecker:
             sys.exit(-1)
         else:
             if self.rev_spec:
-                print("All commits matching %s are signed" % self.rev_spec)
+                print("All commits between %s are signed" % self.rev_spec)
             elif self.check_everything:
                 print("All commits in repo are signed")
             else:
-                print("All commits between HEAD and master are signed")
+                raise NotImplementedError("Unreachable rev spec!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

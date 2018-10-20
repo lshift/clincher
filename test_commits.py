@@ -156,7 +156,7 @@ def test_checker_with_signed_file():
         v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching HEAD...master are signed"
+            "All commits between HEAD...master are signed"
         ]))
 
 def test_signed_checker():
@@ -165,7 +165,7 @@ def test_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching HEAD...master are signed"
+            "All commits between HEAD...master are signed"
         ]))
 
 def test_expired_signed_checker():
@@ -174,5 +174,5 @@ def test_expired_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify_expired, returncode=2)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching HEAD...master are signed"
+            "All commits between HEAD...master are signed"
         ]))
