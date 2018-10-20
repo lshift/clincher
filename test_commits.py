@@ -15,11 +15,14 @@ class _TestArgs:
     git_path = "."
     name = "Foo"
     email = "foo@bar.com"
-    rev_spec = "foo"
+    rev_spec = None
+    check_everything = False
 
-    def __init__(self, manual_signing_path=None):
+    def __init__(self, manual_signing_path=None, rev_spec = None):
         if manual_signing_path:
             self.manual_signing_path = manual_signing_path
+        if rev_spec:
+            self.rev_spec = rev_spec
 
 commit_sha = b'4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1'
 
@@ -116,7 +119,7 @@ def checker():
         with patch('subprocess.run', new=make_run):
             with patch.multiple('subprocess', Popen=popen) as values:
                 popen.set_command('git version', stdout=b'git version 2.14.3')
-                popen.set_command('git rev-list foo --', stdout=commit_sha)
+                popen.set_command('git rev-list HEAD...master --', stdout=commit_sha)
                 sha_str = commit_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
                 from clincher import CommitChecker
@@ -153,7 +156,7 @@ def test_checker_with_signed_file():
         v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching foo are signed"
+            "All commits matching HEAD...master are signed"
         ]))
 
 def test_signed_checker():
@@ -162,7 +165,7 @@ def test_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching foo are signed"
+            "All commits matching HEAD...master are signed"
         ]))
 
 def test_expired_signed_checker():
@@ -171,5 +174,5 @@ def test_expired_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify_expired, returncode=2)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits matching foo are signed"
+            "All commits matching HEAD...master are signed"
         ]))
