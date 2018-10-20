@@ -50,10 +50,13 @@ gpgsig -----BEGIN PGP SIGNATURE-----
 
 Test commit""" % commit_sha
 
+first_parent = b"bed3cbfffc0851167b49b751db32212de2454f6c"
+second_parent = b"5ad01b3ecce547eb3715188b1224beb04f411de6"
+
 empty_merge_commit = b"""8e2f3256c3f1a3c305bffc6a0d8a1056f912ceb2 commit 808
 tree 4f21e33ba1bffc725834bf9ddcb1f59ca15487dd
-parent bed3cbfffc0851167b49b751db32212de2454f6c
-parent 5ad01b3ecce547eb3715188b1224beb04f411de6
+parent %s
+parent %s
 author Foo <foo@bar.com> 1539528686 +0100
 gpgsig -----BEGIN PGP SIGNATURE-----
 
@@ -66,7 +69,7 @@ gpgsig -----BEGIN PGP SIGNATURE-----
  =BWDO
  -----END PGP SIGNATURE-----
 
-Test merge commit"""
+Test merge commit""" % (first_parent, second_parent)
 
 dummy_commit = b"""commit %s
 Author: Foo <foo@bar.com>
@@ -209,6 +212,19 @@ def test_empty_merge_commit():
     with checker() as v:
         v["popen"].set_command('git cat-file --batch', stdout=empty_merge_commit)
         v["popen"].set_command('git show %s --format=' % v["sha"], stdout=b"")
+        v["checker"].check()
+        v["output"].compare('\n'.join([
+            "All commits between HEAD...master are signed"
+        ]))
+
+def test_merge_commit():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=empty_merge_commit)
+        expected_differences = b"differences"
+        v["popen"].set_command('git show %s --format=' % v["sha"], stdout=expected_differences)
+        v["popen"].set_command('git reset --hard %s' % first_parent.decode("utf-8"), stdout=b"HEAD is now at %s test commit" % first_parent[:7])
+        v["popen"].set_command('git -c commit.gpgsign=false merge %s --no-edit' % second_parent.decode('utf-8'), stdout=b'')
+        v["popen"].set_command('git show HEAD --format=', stdout=expected_differences)
         v["checker"].check()
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
