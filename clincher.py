@@ -142,7 +142,7 @@ class CommitChecker:
             else:
                 raise NotImplementedError("Unreachable rev spec!")
 
-if __name__ == "__main__":
+if __name__ == "__main__": # skip because hard to check the CLI bit
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-everything", help="Check everything back to the beginning (default: last branch with master)", action='store_true', default=False)
     parser.add_argument("--rev-spec", help="Add specific revision spec to check. This overrides any use of --check-everything", default=None)
