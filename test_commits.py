@@ -110,7 +110,7 @@ def make_run(*args, **kwargs):
         raise Exception(args)
 
 @contextmanager
-def checker():
+def checker(**kwargs):
     rollback = RollbackImporter()
     with TempDirectory() as d:
         popen = MockPopen()
@@ -121,7 +121,8 @@ def checker():
                 sha_str = commit_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
                 from clincher import CommitChecker
-                c = CommitChecker(_TestArgs(manual_signing_path=d.path))
+                kwargs['manual_signing_path'] = d.path
+                c = CommitChecker(_TestArgs(**kwargs))
                 with OutputCapture() as output:
                     yield {"output":output, "popen":popen, "checker":c, "sha":sha_str, "directory": d}
     rollback.uninstall()
@@ -173,4 +174,15 @@ def test_expired_signed_checker():
         v["checker"].check()
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
+        ]))
+
+def test_checker_with_everything():
+    with checker(check_everything=True) as v:
+        v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        v["popen"].set_command('git cat-file --batch-check', stdout=signed_dummy_rev)
+        v["popen"].set_command('git rev-list %s --' % v['sha'], stdout=commit_sha)
+        v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
+        v["checker"].check()
+        v["output"].compare('\n'.join([
+            "All commits in repo are signed"
         ]))

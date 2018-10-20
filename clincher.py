@@ -96,9 +96,10 @@ class CommitChecker:
                 raise Exception((ce.stdout, ce.stderr))
     
     def __init__(self, args):
+        self.check_everything = args.check_everything
         if args.rev_spec != None:
             self.rev_spec = args.rev_spec
-        elif args.check_everything:
+        elif self.check_everything:
             self.rev_spec = None
         else:
             self.rev_spec = "HEAD...master"
