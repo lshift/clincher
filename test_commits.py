@@ -18,11 +18,9 @@ class _TestArgs:
     rev_spec = None
     check_everything = False
 
-    def __init__(self, manual_signing_path=None, rev_spec = None):
-        if manual_signing_path:
-            self.manual_signing_path = manual_signing_path
-        if rev_spec:
-            self.rev_spec = rev_spec
+    def __init__(self, **kwargs):
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
 
 commit_sha = b'4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1'
 
