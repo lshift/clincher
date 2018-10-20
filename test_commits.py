@@ -50,6 +50,24 @@ gpgsig -----BEGIN PGP SIGNATURE-----
 
 Test commit""" % commit_sha
 
+empty_merge_commit = b"""8e2f3256c3f1a3c305bffc6a0d8a1056f912ceb2 commit 808
+tree 4f21e33ba1bffc725834bf9ddcb1f59ca15487dd
+parent bed3cbfffc0851167b49b751db32212de2454f6c
+parent 5ad01b3ecce547eb3715188b1224beb04f411de6
+author Foo <foo@bar.com> 1539528686 +0100
+gpgsig -----BEGIN PGP SIGNATURE-----
+
+ wsBcBAABCAAQBQJbw1fuCRBK7hj4Ov3rIwAAdHIIACstihCi1/LRfuF1i7rtai9w
+ aYvl+bkF2lILGL3ShOuMV9aNM/RUQnefEElzJ203E2xAbJUBr/J3U5t53m+9PbfH
+ DRUfOLqflJLPX2W1zUKBWA60MuQtzbo4GMIHnAHU7nfPK83YHirM/WmsXmawIxf0
+ iZ4bK8fQM/F24RBJb/+sElSInwDSSRlppzbZ3CiqXsnQf1UbJSHw9HLk7vAFK3xU
+ MT/kffOxKTWMg7WS5yDm0C0SnTFg/2oIC2yMa/Qdim+vi9KYTTPSsb+sJX+rwHuv
+ jwIa/TFkuWrT+ACtsJpaPzKsFULxBb4WiaOV2+T2ZiwAVp27nL/47vOzzkt471g=
+ =BWDO
+ -----END PGP SIGNATURE-----
+
+Test merge commit"""
+
 dummy_commit = b"""commit %s
 Author: Foo <foo@bar.com>
 Date:   Wed Oct 10 11:10:45 2018 +0100
@@ -185,4 +203,13 @@ def test_checker_with_everything():
         v["checker"].check()
         v["output"].compare('\n'.join([
             "All commits in repo are signed"
+        ]))
+
+def test_empty_merge_commit():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=empty_merge_commit)
+        v["popen"].set_command('git show %s --format=' % v["sha"], stdout=b"")
+        v["checker"].check()
+        v["output"].compare('\n'.join([
+            "All commits between HEAD...master are signed"
         ]))
