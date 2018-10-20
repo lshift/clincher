@@ -37,7 +37,6 @@ parent caf701edfdc10239a689db5635ec130d03a13f6c
 author Foo <foo@bar.com> 1539166245 +0100
 committer Foo <foo@bar.com> 1539166245 +0100
 gpgsig -----BEGIN PGP SIGNATURE-----
-
  iQEzBAABCAAdFiEEdLV/PuDAFbtjk09EJnscrwkL+mcFAlu+Fv0ACgkQJnscrwkL
  +mceHQgAsFNJ+aGWJSuBqimyvA3fQw6LkShzNsb3mirLdawv+BOCxw2tEK/NFoGo
  JL3E11fRajxhtP2rsQXLEqvvDYFltoesqAsdJ85bXo09zZZ2qXR1CPzWfg3PjKw2
@@ -59,7 +58,6 @@ parent %s
 parent %s
 author Foo <foo@bar.com> 1539528686 +0100
 gpgsig -----BEGIN PGP SIGNATURE-----
-
  wsBcBAABCAAQBQJbw1fuCRBK7hj4Ov3rIwAAdHIIACstihCi1/LRfuF1i7rtai9w
  aYvl+bkF2lILGL3ShOuMV9aNM/RUQnefEElzJ203E2xAbJUBr/J3U5t53m+9PbfH
  DRUfOLqflJLPX2W1zUKBWA60MuQtzbo4GMIHnAHU7nfPK83YHirM/WmsXmawIxf0
@@ -160,7 +158,7 @@ def test_checker():
         with pytest.raises(SystemExit):
             v["checker"].check()
         v["output"].compare('\n'.join([
-            "%s Test commit False" % v["sha"],
+            "Problem at commit %s: Test commit (no signature)" % v["sha"],
             "Missing signature for %s by Foo" % v["sha"],
         ]))
 
@@ -171,7 +169,7 @@ def test_checker_with_file():
         with pytest.raises(SystemExit):
             v["checker"].check()
         v["output"].compare('\n'.join([
-            "%s Test commit False" % v["sha"],
+            "Problem at commit %s: Test commit (no signature)" % v["sha"],
             "Can't find signature file '%s/%s - Foo.asc' for %s" % (v["directory"].path, v["sha"], v["sha"])
         ]))
 
@@ -210,7 +208,7 @@ def test_no_key_signed_checker():
         with pytest.raises(SystemExit):
             v["checker"].check()
         v["output"].compare('\n'.join([
-            "%s  iQEzBAABCAAdFiEEdLV/PuDAFbtjk09EJnscrwkL+mcFAlu+Fv0ACgkQJnscrwkL True" % v["sha"],
+            "Problem at commit %s: Test commit" % v["sha"],
             "No key available for Foo <foo@bar.com>. We were looking for key with id %s" % key_signature.decode('utf-8')
         ]))
 

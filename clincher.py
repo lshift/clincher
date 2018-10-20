@@ -21,7 +21,7 @@ def check_or_throw(cmd):
 
 class CommitChecker:
     def new_error(self, c, msg):
-        print(c.hexsha, c.summary, c.gpgsig != None)
+        print("Problem at commit %s: %s%s" %(c.hexsha, c.summary, " (no signature)" if c.gpgsig == None else ""))
         print(msg)
         self.errors.add(msg)
 
