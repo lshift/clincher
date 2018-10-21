@@ -99,6 +99,7 @@ class CommitChecker:
                     self.new_error(c, "Key %s expired on %s and the commit was on %s" % (key_id, expiry, when))
             elif ce.stderr.find("WARNING: This key is not certified with a trusted signature!") != -1:
                 # This is bad, but can't seem to figure out how to get gpg to auto-trust keys, so skip
+                # FIXME: Historical issue that I can't seem to reproduce any more...
                 pass
             else:
                 raise Exception((ce.stdout, ce.stderr))
