@@ -5,9 +5,8 @@ Clincher
 
 `clincher` is a tool for checking that all the commits in a git repo are signed, or if they're not that someone has signed something afterwards to backfill that.
 
-By default, `python clincher.py` will check only the commits between current HEAD and master and assume the git repo is rooted in the current directory.
+By default, `clincher` will check only the commits between current HEAD and master and assume the git repo is rooted in the current directory.
 
-* `--check-everything` will check all the commits in the git log
 * `--rev-spec` allows for checking everything in a git rev spec (as per https://git-scm.com/docs/gitrevisions#_specifying_ranges). This is needed for Jenkins support as it doesn't have a "master" branch, but "remotes/upstream/master" does exist
 * `--git-path` allows for specifying the root directory
 

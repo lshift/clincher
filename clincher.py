@@ -110,13 +110,10 @@ class CommitChecker:
     
     def __init__(self, args):
         self.temp_git_path = tempfile.TemporaryDirectory()
-        self.check_everything = args.check_everything
         if args.rev_spec != None:
             self.rev_spec = args.rev_spec
-        elif self.check_everything:
-            self.rev_spec = None
         else:
-            self.rev_spec = "HEAD...master"
+            self.rev_spec = None
 
         self.keydir = os.path.abspath(args.key_path)
         self.keys = [os.path.abspath(os.path.join(self.keydir, k)) for k in os.listdir(self.keydir) if k.endswith(".gpg")]
@@ -154,18 +151,15 @@ class CommitChecker:
         else:
             if self.rev_spec:
                 print("All commits between %s are signed" % self.rev_spec)
-            elif self.check_everything:
-                print("All commits in repo are signed")
             else:
-                raise NotImplementedError("Unreachable rev spec!")
+                print("All commits are signed")
 
     def __del__(self):
         self.temp_git_path.cleanup()
 
 def main(): # skip because hard to check the CLI bit
     parser = argparse.ArgumentParser()
-    parser.add_argument("--check-everything", help="Check everything back to the beginning (default: last branch with master)", action='store_true', default=False)
-    parser.add_argument("--rev-spec", help="Add specific revision spec to check. This overrides any use of --check-everything", default=None)
+    parser.add_argument("--rev-spec", help="Add specific revision spec to check", default=None)
     parser.add_argument("--git-path", default=".", help="Path to git repo (default: this directory)")
     parser.add_argument("--key-path", default="keys", help="Path to GPG keys (default: keys)")
     parser.add_argument("--manual-signing-path", default="manually_signed", help="Path to manually signed files (default: manually_signed)")

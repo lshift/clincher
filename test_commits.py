@@ -18,7 +18,6 @@ class _TestArgs:
     name = "Foo"
     email = "foo@bar.com"
     rev_spec = None
-    check_everything = False
 
     def __init__(self, **kwargs):
         for k in kwargs:
@@ -170,15 +169,16 @@ def make_run(*args, **kwargs):
         raise Exception(args)
 
 @contextmanager
-def checker(**kwargs):
+def checker(test_sha=commit_sha, **kwargs):
     rollback = RollbackImporter()
     with TempDirectory() as d:
         popen = MockPopen()
         with patch('subprocess.run', new=make_run):
             with patch.multiple('subprocess', Popen=popen) as values:
                 popen.set_command('git version', stdout=b'git version 2.14.3')
-                popen.set_command('git rev-list HEAD...master --', stdout=commit_sha)
-                sha_str = commit_sha.decode("utf-8")
+                popen.set_command('git cat-file --batch-check', stdout=b"%s commit 239" % test_sha)
+                popen.set_command('git rev-list %s --' % test_sha.decode('utf-8'), stdout=test_sha)
+                sha_str = test_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
                 from clincher import CommitChecker
                 kwargs['manual_signing_path'] = d.path
@@ -215,12 +215,11 @@ def test_checker_with_signed_file():
         v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits between HEAD...master are signed"
+            "All commits are signed"
         ]))
 
 def test_checker_with_dodgy_signed_file():
-    with checker() as v:
-        v["popen"].set_command('git rev-list HEAD...master --', stdout=bad_signature_sha)
+    with checker(test_sha=bad_signature_sha) as v:
         v["popen"].set_command('git cat-file --batch', stdout=bad_signature_rev)
         bad_sig_sha_str = bad_signature_sha.decode('utf-8')
         v["popen"].set_command("git show %s" % bad_sig_sha_str, stdout=dummy_commit)
@@ -235,18 +234,16 @@ def test_checker_with_dodgy_signed_file():
         assert re.match(compare_str, v["output"].captured)
 
 def test_checker_with_wrongly_signed_file():
-    with checker() as v:
-        v["popen"].set_command('git rev-list HEAD...master --', stdout=wrong_signature_sha)
+    with checker(test_sha=wrong_signature_sha) as v:
         v["popen"].set_command('git cat-file --batch', stdout=wrong_signature_rev)
-        wrong_sig_sha_str = wrong_signature_sha.decode('utf-8')
-        v["popen"].set_command("git show %s" % wrong_sig_sha_str, stdout=dummy_commit)
-        v["directory"].write("%s - Foo" % wrong_sig_sha_str, b"Blah")
-        v["directory"].write("%s - Foo.asc" % wrong_sig_sha_str, b"Blah signed")
+        v["popen"].set_command("git show %s" % v["sha"], stdout=dummy_commit)
+        v["directory"].write("%s - Foo" % v["sha"], b"Blah")
+        v["directory"].write("%s - Foo.asc" % v["sha"], b"Blah signed")
         with pytest.raises(SystemExit):
             v["checker"].check()
         v["output"].compare('\n'.join([
-            "Problem at commit %s: Test commit (no signature)" % wrong_sig_sha_str,
-            "Bad signature for %s. Did you sign the right file?" % wrong_sig_sha_str
+            "Problem at commit %s: Test commit (no signature)" % v["sha"],
+            "Bad signature for %s. Did you sign the right file?" % v["sha"]
         ]))
 
 def test_signed_checker():
@@ -255,7 +252,7 @@ def test_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits between HEAD...master are signed"
+            "All commits are signed"
         ]))
 
 def test_expired_signed_checker():
@@ -264,7 +261,7 @@ def test_expired_signed_checker():
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify_expired, returncode=2)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits between HEAD...master are signed"
+            "All commits are signed"
         ]))
 
 def test_expired_too_old_signed_checker():
@@ -291,14 +288,14 @@ def test_no_key_signed_checker():
 
 
 def test_checker_with_everything():
-    with checker(check_everything=True) as v:
+    with checker() as v:
         v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
         v["popen"].set_command('git cat-file --batch-check', stdout=signed_dummy_rev)
         v["popen"].set_command('git rev-list %s --' % v['sha'], stdout=commit_sha)
         v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits in repo are signed"
+            "All commits are signed"
         ]))
 
 def test_empty_merge_commit():
@@ -307,7 +304,7 @@ def test_empty_merge_commit():
         v["popen"].set_command('git show %s --format=' % v["sha"], stdout=b"")
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits between HEAD...master are signed"
+            "All commits are signed"
         ]))
 
 def test_merge_commit():
@@ -320,7 +317,7 @@ def test_merge_commit():
         v["popen"].set_command('git show HEAD --format=', stdout=expected_differences)
         v["checker"].check()
         v["output"].compare('\n'.join([
-            "All commits between HEAD...master are signed"
+            "All commits are signed"
         ]))
 
 def test_conflicting_merge_commit():
