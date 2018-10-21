@@ -53,8 +53,7 @@ class CommitChecker:
             local_commit = self.repo.git.show("HEAD", "--format=")
             if local_commit != commit:
                 diff = difflib.unified_diff(commit, local_commit)
-                self.new_error(c, "Conflicted unsigned merge")
-                raise Exception
+                self.new_error(c, "Unsigned merge whose diff varies from what would be expected. Bad third-party merge?")
 
     def check_unsigned(self, c):
         manual_path = os.path.join(self.manual, "%s - %s" % (c.hexsha, c.author.name))
