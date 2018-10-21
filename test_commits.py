@@ -208,6 +208,15 @@ def test_checker_with_rev_spec():
             "All commits between HEAD...master are signed"
         ]))
 
+def test_checker_with_bad_rev_spec():
+    with checker(rev_spec="junk") as v:
+        v["popen"].set_command('git rev-list junk --', stderr=b"fatal: bad revision 'junk'", returncode=128)
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "Bad rev spec: 'junk'"
+        ]))
+
 def test_checker_with_file():
     with checker() as v:
         v["directory"].write("%s - Foo" % v["sha"], b"Blah")

@@ -28,7 +28,8 @@ def check_or_throw(cmd, quiet=False):
 
 class CommitChecker:
     def new_error(self, c, msg):
-        print("Problem at commit %s: %s%s" %(c.hexsha, c.summary, " (no signature)" if c.gpgsig == None else ""))
+        if c != None:
+            print("Problem at commit %s: %s%s" %(c.hexsha, c.summary, " (no signature)" if c.gpgsig == None else ""))
         print(msg)
         self.errors.add(msg)
 
@@ -137,14 +138,20 @@ class CommitChecker:
         self.errors = set()
     
     def check(self):
-        for c in self.repo.iter_commits(rev=self.rev_spec):
-            if c.gpgsig == None:
-                if len(c.parents) == 2:
-                    self.check_merge(c)
+        try:
+            for c in self.repo.iter_commits(rev=self.rev_spec):
+                if c.gpgsig == None:
+                    if len(c.parents) == 2:
+                        self.check_merge(c)
+                    else:
+                        self.check_unsigned(c)
                 else:
-                    self.check_unsigned(c)
+                    self.check_signed(c)
+        except git.GitCommandError as e:
+            if e.stderr.find("fatal: bad revision") != -1:
+                self.new_error(None, "Bad rev spec: '%s'" % self.rev_spec)
             else:
-                self.check_signed(c)
+                raise
 
         if len(self.errors) > 0:
             sys.exit(-1)
