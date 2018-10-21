@@ -69,7 +69,7 @@ class CommitChecker:
             except subprocess.CalledProcessError as ce:
                 if ce.stdout.find("BAD signature") != -1:
                     key_id = self.get_key(ce.stdout)
-                    self.new_error(c, "Bad signature for %s" % key_id)
+                    self.new_error(c, "Bad signature for %s. Did you sign the right file?" % key_id)
                 elif ce.stdout.find("the signature could not be verified"):
                     self.new_error(c, "Bad signature data in %s. May not be valid GPG file?" % manual_path)
                 else:

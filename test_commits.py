@@ -26,6 +26,7 @@ class _TestArgs:
 
 commit_sha = b'4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1'
 bad_signature_sha = b'66f5d00d1a31fdfb87b2080ffe72f9774c11e091'
+wrong_signature_sha = b'd45b039f0703f471a69c8618d05422516ca4d249'
 
 dummy_rev_pattern = b"""%s commit 209
 tree 072e57c271f2a38a81291a7d162b7f99ac015fc9
@@ -34,8 +35,9 @@ committer Foo <foo@bar.com> 1539166245 +0100
 
 Test commit"""
 
-dummy_rev = dummy_rev_pattern  % commit_sha
-bad_signature_rev = dummy_rev_pattern  % bad_signature_sha
+dummy_rev = dummy_rev_pattern % commit_sha
+bad_signature_rev = dummy_rev_pattern % bad_signature_sha
+wrong_signature_rev = dummy_rev_pattern % wrong_signature_sha
 
 signed_dummy_rev = b"""%s commit 759
 tree fc7aee104fb49559b7cecd29317ad6055da71e4a
@@ -127,6 +129,10 @@ gpg: the signature could not be verified.
 Please remember that the signature file (.sig or .asc)
 should be the first file given on the command line."""
 
+wrong_signature_file = """gpg: Signature made Sun 21 Oct 11:38:33 2018 BST
+gpg:                using RSA key %s
+gpg: BAD signature from "Foo <foo@bar.com>" [ultimate]""" % wrong_signature_sha.decode('utf-8')
+
 class RollbackImporter:
     def __init__(self):
         sys.meta_path.insert(0, self)
@@ -156,6 +162,8 @@ def make_run(*args, **kwargs):
             return subprocess.CompletedProcess(args=args, returncode=0, stdout=good_signature)
         elif test_path.find(bad_signature_sha.decode('utf-8')) != -1:
             raise subprocess.CalledProcessError(returncode=2, cmd=args, output=bad_signature_file)
+        elif test_path.find(wrong_signature_sha.decode('utf-8')) != -1:
+            raise subprocess.CalledProcessError(returncode=2, cmd=args, output=wrong_signature_file)
         else:
             raise Exception(args[0])
     else:
@@ -225,6 +233,21 @@ def test_checker_with_dodgy_signed_file():
             "Bad signature data in .*?%s - Foo. May not be valid GPG file?" % bad_sig_sha_str
         ])
         assert re.match(compare_str, v["output"].captured)
+
+def test_checker_with_wrongly_signed_file():
+    with checker() as v:
+        v["popen"].set_command('git rev-list HEAD...master --', stdout=wrong_signature_sha)
+        v["popen"].set_command('git cat-file --batch', stdout=wrong_signature_rev)
+        wrong_sig_sha_str = wrong_signature_sha.decode('utf-8')
+        v["popen"].set_command("git show %s" % wrong_sig_sha_str, stdout=dummy_commit)
+        v["directory"].write("%s - Foo" % wrong_sig_sha_str, b"Blah")
+        v["directory"].write("%s - Foo.asc" % wrong_sig_sha_str, b"Blah signed")
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "Problem at commit %s: Test commit (no signature)" % wrong_sig_sha_str,
+            "Bad signature for %s. Did you sign the right file?" % wrong_sig_sha_str
+        ]))
 
 def test_signed_checker():
     with checker() as v:
