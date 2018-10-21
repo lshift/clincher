@@ -277,3 +277,18 @@ def test_merge_commit():
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
         ]))
+
+def test_conflicting_merge_commit():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=empty_merge_commit)
+        expected_differences = b"differences"
+        v["popen"].set_command('git show %s --format=' % v["sha"], stdout=expected_differences)
+        v["popen"].set_command('git reset --hard %s' % first_parent.decode("utf-8"), stdout=b"HEAD is now at %s test commit" % first_parent[:7])
+        v["popen"].set_command('git -c commit.gpgsign=false merge %s --no-edit' % second_parent.decode('utf-8'), stdout=b"""CONFLICT (content): Merge conflict in src/common.rs
+Automatic merge failed; fix conflicts and then commit the result.""", returncode=1)
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "Problem at commit %s: Test merge commit (no signature)" % v["sha"],
+            "Unsigned conflicting merge found, which we can't check"
+        ]))
