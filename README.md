@@ -15,4 +15,7 @@ If a commit isn't signed, a file will be generated in the "manually_signed" fold
 To sign the commit, use the following
 `gpg --sign --armor --detach-sign manually_signed/<commit file>`
 
-"keys" contains a list of the GPG keys for all trusted users, which will be automatically imported by the tool.
+"keys" contains a list of the GPG keys for all trusted users, which will be automatically imported by the tool. To export a key in the format we expect
+`gpg --export --armor 5BBC2B94F704B8DE246E78C471951B6C037BC7A0` (replacing the "5BB..." block with your key id from `gpg --list-keys`) and write it to a file
+in "keys" ending with ".gpg". We suggest using the users name and today's date to allow for identification and coping with expired keys. Please note that
+even if a key is expired, if it's been used to sign historical commits prior to it's expiry it should be kept!

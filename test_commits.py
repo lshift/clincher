@@ -7,6 +7,7 @@ import sys
 from contextlib import contextmanager
 import subprocess
 import re
+import os.path
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -135,7 +136,7 @@ class RollbackImporter:
                     del(sys.modules[modname])
 
 def make_run(*args, **kwargs):
-    if args == (['gpg', '--import'],):
+    if args == (['gpg', '--import', os.path.join(os.path.dirname(__file__), 'keys/example_key.gpg')],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=b'')
     elif args == (['gpg', '--list-keys', key_signature.decode('utf-8')],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)

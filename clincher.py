@@ -104,6 +104,7 @@ class CommitChecker:
                 raise Exception((ce.stdout, ce.stderr))
     
     def __init__(self, args):
+        self.temp_git_path = tempfile.TemporaryDirectory()
         self.check_everything = args.check_everything
         if args.rev_spec != None:
             self.rev_spec = args.rev_spec
@@ -117,7 +118,6 @@ class CommitChecker:
         if len(self.keys) > 0:
             check_or_throw(["gpg", "--import"] + self.keys)
 
-        self.temp_git_path = tempfile.TemporaryDirectory()
         local_git_path = self.temp_git_path.name + "/.git"
         shutil.copytree(args.git_path + "/.git", local_git_path)
         self.repo = git.Repo(local_git_path)
