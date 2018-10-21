@@ -337,3 +337,17 @@ Automatic merge failed; fix conflicts and then commit the result.""", returncode
             "Problem at commit %s: Test merge commit (no signature)" % v["sha"],
             "Unsigned conflicting merge found, which we can't check"
         ]))
+
+def test_different_merge_commit():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=empty_merge_commit)
+        v["popen"].set_command('git show %s --format=' % v["sha"], stdout=b"differences")
+        v["popen"].set_command('git reset --hard %s' % first_parent.decode("utf-8"), stdout=b"HEAD is now at %s test commit" % first_parent[:7])
+        v["popen"].set_command('git -c commit.gpgsign=false merge %s --no-edit' % second_parent.decode('utf-8'), stdout=b'')
+        v["popen"].set_command('git show HEAD --format=', stdout=b"other differences")
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "Problem at commit %s: Test merge commit (no signature)" % v["sha"],
+            "Unsigned merge whose diff varies from what would be expected. Bad third-party merge?"
+        ]))
