@@ -18,6 +18,7 @@ requires=[
     "GitPython",
     "dateparser"
 ]
+description-file="README.md"
 
 [tool.flit.scripts]
 clincher = "clincher:main"

@@ -20,3 +20,8 @@ To sign the commit, use the following
 `gpg --export --armor 5BBC2B94F704B8DE246E78C471951B6C037BC7A0` (replacing the "5BB..." block with your key id from `gpg --list-keys`) and write it to a file
 in "keys" ending with ".gpg". We suggest using the users name and today's date to allow for identification and coping with expired keys. Please note that
 even if a key is expired, if it's been used to sign historical commits prior to it's expiry it should be kept!
+
+Uploading new versions to PyPi
+------------------------------
+We use [Flit](https://flit.readthedocs.io/en/latest/) for uploading so the following works
+`FLIT_USERNAME="<pypi username>" FLIT_PASSWORD="<pypi password>" flit publish`
