@@ -90,19 +90,27 @@ index 0000000..a47c0a9
 +FROM python:3.6-slim""" % commit_sha
 
 key_signature = b"5BBC2B94F704B8DE246E78C471951B6C037BC7A0"
+older_key_signature = b"286781e812cd4c7f0a14a07c1a723425f97beb65"
 
 dummy_verify = b"""gpg: Signature made Wed 10 Oct 16:13:01 2018 BST
 gpg:                using RSA key %s
 gpg: Good signature from "Foo <foo@bar.com>" [ultimate]""" % key_signature
 
-dummy_verify_expired = b"""gpg: Signature made Fri 25 May 15:29:58 2018 BST
+dummy_verify_expired_template = b"""gpg: Signature made Fri 25 May 15:29:58 2018 BST
 gpg:                using RSA key %s
 gpg: Good signature from "Foo <foo@bar.com>" [expired]
-gpg: Note: This key has expired!""" % key_signature
+gpg: Note: This key has expired!"""
+
+dummy_verify_expired = dummy_verify_expired_template % key_signature
+dummy_verify_expired_older = dummy_verify_expired_template % older_key_signature
 
 expired_key = """pub   rsa4096 2018-05-01 [SCEA] [expired: 2018-07-30]
       %s
 uid           [ expired] Foo <foo@bar.com>""" % key_signature
+
+older_expired_key = """pub   rsa4096 2018-05-01 [SCEA] [expired: 2017-07-30]
+      %s
+uid           [ expired] Foo <foo@bar.com>""" % older_key_signature
 
 good_signature = """gpg: Signature made Fri 19 Oct 21:20:15 2018 BST
 gpg:                using RSA key %s
@@ -140,6 +148,8 @@ def make_run(*args, **kwargs):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=b'')
     elif args == (['gpg', '--list-keys', key_signature.decode('utf-8')],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)
+    elif args == (['gpg', '--list-keys', older_key_signature.decode('utf-8')],):
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=older_expired_key)
     elif args[0][:2] == ["gpg", "--verify"]:
         test_path = args[0][-1]
         if test_path.find(commit_sha.decode('utf-8')) != -1:
@@ -232,6 +242,17 @@ def test_expired_signed_checker():
         v["checker"].check()
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
+        ]))
+
+def test_expired_too_old_signed_checker():
+    with checker() as v:
+        v["popen"].set_command('git cat-file --batch', stdout=signed_dummy_rev)
+        v["popen"].set_command("git verify-commit %s" % v["sha"], stderr=dummy_verify_expired_older, returncode=2)
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        v["output"].compare('\n'.join([
+            "Problem at commit %s: Test commit" % v["sha"],
+            "Key %s expired on 2017-07-30 23:59:00+01:00 and the commit was on 2018-05-25 15:29:58+11:00" % older_key_signature.decode('utf-8')
         ]))
 
 def test_no_key_signed_checker():
