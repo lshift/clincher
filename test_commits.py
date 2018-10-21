@@ -197,6 +197,17 @@ def test_checker():
             "Missing signature for %s by Foo" % v["sha"],
         ]))
 
+def test_checker_with_rev_spec():
+    with checker(rev_spec="HEAD...master") as v:
+        v["popen"].set_command('git rev-list HEAD...master --', stdout=commit_sha)
+        v["directory"].write("%s - Foo" % v["sha"], b"Blah")
+        v["directory"].write("%s - Foo.asc" % v["sha"], b"Blah signed")
+        v["popen"].set_command('git cat-file --batch', stdout=dummy_rev)
+        v["checker"].check()
+        v["output"].compare('\n'.join([
+            "All commits between HEAD...master are signed"
+        ]))
+
 def test_checker_with_file():
     with checker() as v:
         v["directory"].write("%s - Foo" % v["sha"], b"Blah")
