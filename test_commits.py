@@ -6,6 +6,7 @@ from unittest.mock import patch, DEFAULT
 import sys
 from contextlib import contextmanager
 import subprocess
+import re
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -23,13 +24,17 @@ class _TestArgs:
             setattr(self, k, kwargs[k])
 
 commit_sha = b'4c6455b8efef9aa2ff5c0c844bb372bdb71eb4b1'
+bad_signature_sha = b'66f5d00d1a31fdfb87b2080ffe72f9774c11e091'
 
-dummy_rev = b"""%s commit 209
+dummy_rev_pattern = b"""%s commit 209
 tree 072e57c271f2a38a81291a7d162b7f99ac015fc9
 author Foo <foo@bar.com> 1539166245 +0100
 committer Foo <foo@bar.com> 1539166245 +0100
 
-Test commit""" % commit_sha
+Test commit"""
+
+dummy_rev = dummy_rev_pattern  % commit_sha
+bad_signature_rev = dummy_rev_pattern  % bad_signature_sha
 
 signed_dummy_rev = b"""%s commit 759
 tree fc7aee104fb49559b7cecd29317ad6055da71e4a
@@ -108,6 +113,11 @@ gpg: Can't check signature: No public key""" % key_signature
 
 not_detached_signature = "gpg: not a detached signature"
 
+bad_signature_file = """gpg: no valid OpenPGP data found.
+gpg: the signature could not be verified.
+Please remember that the signature file (.sig or .asc)
+should be the first file given on the command line."""
+
 class RollbackImporter:
     def __init__(self):
         sys.meta_path.insert(0, self)
@@ -130,7 +140,13 @@ def make_run(*args, **kwargs):
     elif args == (['gpg', '--list-keys', key_signature.decode('utf-8')],):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=expired_key)
     elif args[0][:2] == ["gpg", "--verify"]:
-        return subprocess.CompletedProcess(args=args, returncode=0, stdout=good_signature)
+        test_path = args[0][-1]
+        if test_path.find(commit_sha.decode('utf-8')) != -1:
+            return subprocess.CompletedProcess(args=args, returncode=0, stdout=good_signature)
+        elif test_path.find(bad_signature_sha.decode('utf-8')) != -1:
+            raise subprocess.CalledProcessError(returncode=2, cmd=args, output=bad_signature_file)
+        else:
+            raise Exception(args[0])
     else:
         raise Exception(args)
 
@@ -182,6 +198,22 @@ def test_checker_with_signed_file():
         v["output"].compare('\n'.join([
             "All commits between HEAD...master are signed"
         ]))
+
+def test_checker_with_dodgy_signed_file():
+    with checker() as v:
+        v["popen"].set_command('git rev-list HEAD...master --', stdout=bad_signature_sha)
+        v["popen"].set_command('git cat-file --batch', stdout=bad_signature_rev)
+        bad_sig_sha_str = bad_signature_sha.decode('utf-8')
+        v["popen"].set_command("git show %s" % bad_sig_sha_str, stdout=dummy_commit)
+        v["directory"].write("%s - Foo" % bad_sig_sha_str, b"Blah")
+        v["directory"].write("%s - Foo.asc" % bad_sig_sha_str, b"Blah signed")
+        with pytest.raises(SystemExit):
+            v["checker"].check()
+        compare_str = '\n'.join([
+            "Problem at commit %s: Test commit \(no signature\)" % bad_sig_sha_str,
+            "Bad signature data in .*?%s - Foo. May not be valid GPG file?" % bad_sig_sha_str
+        ])
+        assert re.match(compare_str, v["output"].captured)
 
 def test_signed_checker():
     with checker() as v:

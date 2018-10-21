@@ -12,13 +12,14 @@ import dateparser
 import shutil
 import tempfile
 
-def check_or_throw(cmd):
+def check_or_throw(cmd, quiet=False):
     try:
         s = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, encoding='utf-8')
         return s.stdout
     except subprocess.CalledProcessError as e:
-        print(" ".join(cmd))
-        print(e.stdout)
+        if not quiet:
+            print(" ".join(cmd))
+            print(e.stdout)
         raise
 
 class CommitChecker:
@@ -65,11 +66,13 @@ class CommitChecker:
             self.new_error(c, "Can't find signature file '%s' for %s" % (gpg_path, c.hexsha))
         else:
             try:
-                check_or_throw(["gpg", "--verify", gpg_path, manual_path])
+                check_or_throw(["gpg", "--verify", gpg_path, manual_path], quiet=True)
             except subprocess.CalledProcessError as ce:
                 if ce.stdout.find("BAD signature") != -1:
                     key_id = self.get_key(ce.stdout)
                     self.new_error(c, "Bad signature for %s" % key_id)
+                elif ce.stdout.find("the signature could not be verified"):
+                    self.new_error(c, "Bad signature data in %s. May not be valid GPG file?" % manual_path)
                 else:
                     raise
 
