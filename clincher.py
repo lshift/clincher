@@ -127,12 +127,12 @@ class CommitChecker:
         self.manual = os.path.abspath(args.manual_signing_path)
 
         with self.repo.config_writer(config_level='global') as config:
-            if not config.has_section("user"):
-                config.add_section("user")
             if not config.has_option(section="user", option="email"):
-                config.set("user", "email", args.email)
+                print("No user.email configured in git. Please fix this.")
+                sys.exit(-1)
             if not config.has_option(section="user", option="name"):
-                config.set("user", "name", args.name)
+                print("No user.name configured in git. Please fix this.")
+                sys.exit(-1)
             config.write()
 
         self.errors = set()
@@ -170,8 +170,6 @@ def main(): # skip because hard to check the CLI bit
     parser.add_argument("--git-path", default=".", help="Path to git repo (default: this directory)")
     parser.add_argument("--key-path", default="keys", help="Path to GPG keys (default: keys)")
     parser.add_argument("--manual-signing-path", default="manually_signed", help="Path to manually signed files (default: manually_signed)")
-    parser.add_argument("--email", default="automated@example.com")
-    parser.add_argument("--name", default="Automated signer")
     args = parser.parse_args()
 
     checker = CommitChecker(args)
