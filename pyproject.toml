@@ -1,0 +1,23 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "clincher"
+author = "Tom Parker-Shemilt"
+author-email = "palfrey@tevp.net"
+home-page = "https://github.com/lshift/clincher"
+requires-python=">=3.6,<4"
+classifiers=[
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Version Control :: Git"
+]
+requires=[
+    "GitPython",
+    "dateparser"
+]
+
+[tool.flit.scripts]
+clincher = "clincher:main"

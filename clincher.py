@@ -1,3 +1,7 @@
+"""Clincher is a tool for checking that all the commits in a git repo are signed"""
+
+__version__ = '0.1'
+
 import git
 import platform
 import tempfile
@@ -158,7 +162,7 @@ class CommitChecker:
     def __del__(self):
         self.temp_git_path.cleanup()
 
-if __name__ == "__main__": # skip because hard to check the CLI bit
+def main(): # skip because hard to check the CLI bit
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-everything", help="Check everything back to the beginning (default: last branch with master)", action='store_true', default=False)
     parser.add_argument("--rev-spec", help="Add specific revision spec to check. This overrides any use of --check-everything", default=None)
@@ -171,3 +175,6 @@ if __name__ == "__main__": # skip because hard to check the CLI bit
 
     checker = CommitChecker(args)
     checker.check()
+
+if __name__ == "__main__": # skip because hard to check the CLI bit
+    main()
