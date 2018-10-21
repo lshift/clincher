@@ -1,6 +1,10 @@
-sudo: required
-language: minimal
-services:
-  - docker
+sudo: false
+language: python
+python:
+  - "3.6"
+install:
+  - pip install -r requirements.txt
 script:
-- docker build .
+  - python -m pytest -v test_commits.py --cov=clincher
+after_success:
+  - coveralls

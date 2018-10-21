@@ -7,11 +7,16 @@
 -e git+https://github.com/palfrey/testfixtures.git@parallel-popen#egg=testfixtures
 atomicwrites==1.2.1       # via pytest
 attrs==18.2.0             # via pytest
+certifi==2018.10.15       # via requests
+chardet==3.0.4            # via requests
 click==7.0                # via pip-tools
-coverage==4.5.1           # via pytest-cov
+coverage==4.5.1           # via coveralls, pytest-cov
+coveralls==1.5.1
 dateparser==0.7.0
+docopt==0.6.2             # via coveralls
 gitdb2==2.0.3             # via gitpython
 gitpython==2.1.11
+idna==2.7                 # via requests
 more-itertools==4.3.0     # via pytest
 pip-tools==3.1.0
 pluggy==0.7.1             # via pytest
@@ -22,6 +27,8 @@ pytest==3.8.2
 python-dateutil==2.7.3    # via dateparser
 pytz==2018.4              # via dateparser, tzlocal
 regex==2018.2.21          # via dateparser
+requests==2.20.0          # via coveralls
 six==1.11.0               # via more-itertools, pip-tools, pytest, python-dateutil
 smmap2==2.0.3             # via gitdb2
 tzlocal==1.5.1            # via dateparser
+urllib3==1.24             # via requests
