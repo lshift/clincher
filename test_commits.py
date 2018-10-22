@@ -181,7 +181,8 @@ def checker(test_sha=commit_sha, **kwargs):
                 sha_str = test_sha.decode("utf-8")
                 popen.set_command("git show %s" % sha_str, stdout=dummy_commit)
                 from clincher import CommitChecker
-                kwargs['manual_signing_path'] = d.path
+                if 'manual_signing_path' not in kwargs:
+                    kwargs['manual_signing_path'] = d.path
                 c = CommitChecker(_TestArgs(**kwargs))
                 with OutputCapture() as output:
                     yield {"output":output, "popen":popen, "checker":c, "sha":sha_str, "directory": d}
@@ -368,3 +369,17 @@ def test_different_merge_commit():
             "Problem at commit %s: Test merge commit (no signature)" % v["sha"],
             "Unsigned merge whose diff varies from what would be expected. Bad third-party merge?"
         ]))
+
+def test_checker_with_bad_key_path():
+    with OutputCapture() as output:
+        with pytest.raises(SystemExit):
+            with checker(key_path="junk"):
+                pass
+        assert re.match("^Can't find key path .*/junk$", output.captured)
+
+def test_checker_with_bad_manual_path():
+    with OutputCapture() as output:
+        with pytest.raises(SystemExit):
+            with checker(manual_signing_path="junk"):
+                pass
+        assert re.match("^Can't find manual signing path .*/junk$", output.captured)

@@ -108,6 +108,10 @@ class CommitChecker:
                 pass
             else:
                 raise Exception((ce.stdout, ce.stderr))
+
+    def exit_error(self, message):
+        print(message)
+        sys.exit(-1)
     
     def __init__(self, args):
         self.temp_git_path = tempfile.TemporaryDirectory()
@@ -117,6 +121,8 @@ class CommitChecker:
             self.rev_spec = None
 
         self.keydir = os.path.abspath(args.key_path)
+        if not os.path.exists(self.keydir):
+            self.exit_error("Can't find key path %s" % self.keydir)
         self.keys = [os.path.abspath(os.path.join(self.keydir, k)) for k in os.listdir(self.keydir) if k.endswith(".gpg")]
         if len(self.keys) > 0:
             check_or_throw(["gpg", "--import"] + self.keys)
@@ -125,14 +131,14 @@ class CommitChecker:
         shutil.copytree(args.git_path + "/.git", local_git_path)
         self.repo = git.Repo(local_git_path)
         self.manual = os.path.abspath(args.manual_signing_path)
+        if not os.path.exists(self.manual):
+            self.exit_error("Can't find manual signing path %s" % self.manual)
 
         with self.repo.config_writer(config_level='global') as config:
             if not config.has_option(section="user", option="email"):
-                print("No user.email configured in git. Please fix this.")
-                sys.exit(-1)
+                self.exit_error("No user.email configured in git. Please fix this.")
             if not config.has_option(section="user", option="name"):
-                print("No user.name configured in git. Please fix this.")
-                sys.exit(-1)
+                self.exit_error("No user.name configured in git. Please fix this.")
             config.write()
 
         self.errors = set()
