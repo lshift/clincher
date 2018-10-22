@@ -1,6 +1,6 @@
 """Clincher is a tool for checking that all the commits in a git repo are signed"""
 
-__version__ = '0.1'
+__version__ = '1.0'
 
 import git
 import platform
