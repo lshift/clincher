@@ -383,3 +383,10 @@ def test_checker_with_bad_manual_path():
             with checker(manual_signing_path="junk"):
                 pass
         assert re.match("^Can't find manual signing path .*/junk$", output.captured)
+
+def test_checker_with_bad_git_path():
+    with OutputCapture() as output:
+        with pytest.raises(SystemExit):
+            with checker(git_path="junk"):
+                pass
+        assert re.match("^Can't find .git folder under .*/junk$", output.captured)

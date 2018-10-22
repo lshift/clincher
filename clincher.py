@@ -127,9 +127,12 @@ class CommitChecker:
         if len(self.keys) > 0:
             check_or_throw(["gpg", "--import"] + self.keys)
 
-        local_git_path = self.temp_git_path.name + "/.git"
-        shutil.copytree(args.git_path + "/.git", local_git_path)
-        self.repo = git.Repo(local_git_path)
+        temp_git_root = self.temp_git_path.name + "/.git"
+        local_git_root = args.git_path + "/.git"
+        if not os.path.exists(local_git_root):
+            self.exit_error("Can't find .git folder under %s" % os.path.abspath(args.git_path))
+        shutil.copytree(local_git_root, temp_git_root)
+        self.repo = git.Repo(temp_git_root)
         self.manual = os.path.abspath(args.manual_signing_path)
         if not os.path.exists(self.manual):
             self.exit_error("Can't find manual signing path %s" % self.manual)
