@@ -9,6 +9,11 @@ Clincher
 
 It implicitly trusts all the keys that are in the git repository, and dealing with keys that shouldn't be there is currently out of scope.
 
+Installation
+------------
+1. [Install Python 3.X](https://www.python.org/downloads/)
+2. `pip install clincher`
+
 Options
 -------
 * `--rev-spec`: to check only the revisions in a git rev spec (as per https://git-scm.com/docs/gitrevisions#_specifying_ranges). Default is to check everything.
