@@ -2,8 +2,8 @@ Clincher
 ========
 [![Build Status](https://travis-ci.org/lshift/clincher.svg?branch=master)](https://travis-ci.org/lshift/clincher)
 [![Coverage Status](https://coveralls.io/repos/github/lshift/clincher/badge.svg)](https://coveralls.io/github/lshift/clincher)
-![PyPI](https://img.shields.io/pypi/v/clincher.svg)
-![PyPI - License](https://img.shields.io/pypi/l/clincher.svg)
+[![PyPI](https://img.shields.io/pypi/v/clincher.svg)](https://pypi.org/project/clincher/)
+[![PyPI - License](https://img.shields.io/pypi/l/clincher.svg)](LICENSE)
 
 `clincher` is a tool for checking that all the commits in a git repo are signed, or if they're not that someone has signed something afterwards to backfill that.
 
