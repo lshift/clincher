@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file test-requirements.txt test-requirements.in
 #
--e git+https://github.com/palfrey/testfixtures.git@parallel-popen#egg=testfixtures
+-e git+https://github.com/Simplistix/testfixtures.git@master#egg=testfixtures
 atomicwrites==1.2.1       # via pytest
 attrs==18.2.0             # via pytest
 certifi==2018.10.15       # via requests

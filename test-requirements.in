@@ -3,4 +3,4 @@ pytest-mock
 pytest-cov
 coveralls
 
--e git+https://github.com/palfrey/testfixtures.git@parallel-popen#egg=testfixtures
+-e git+https://github.com/Simplistix/testfixtures.git@master#egg=testfixtures
