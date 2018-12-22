@@ -2,5 +2,4 @@ pytest
 pytest-mock
 pytest-cov
 coveralls
-
--e git+https://github.com/Simplistix/testfixtures.git@master#egg=testfixtures
+testfixtures >= 6.4.0 # Needed for https://github.com/Simplistix/testfixtures/pull/92
